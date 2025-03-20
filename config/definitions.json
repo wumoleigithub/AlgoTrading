@@ -1,0 +1,36 @@
+{
+    "BullTrendBar": {
+      "description": "A Bull Trend Bar is a bullish candlestick where the closing price is higher than the opening price, with a strong body and significant movement compared to previous bars.",
+      "conditions": {
+        "close": { "operator": ">", "target": "open" },
+        "body_ratio": { 
+          "formula": "(close - open) / (high - low)", 
+          "operator": ">=", 
+          "value": 0.6 
+        },
+        "total_range_comparison": { 
+          "formula": "(high - low) > avg_total_range_last_N_bars",
+          "operator": ">",
+          "lookback_period": 20
+        }
+      }
+    },
+    
+    "BearTrendBar": {
+      "description": "A Bear Trend Bar is a bearish candlestick where the closing price is lower than the opening price, with a strong body and significant movement compared to previous bars.",
+      "conditions": {
+        "close": { "operator": "<", "target": "open" },
+        "body_ratio": { 
+          "formula": "(open - close) / (high - low)", 
+          "operator": ">=", 
+          "value": 0.6 
+        },
+        "total_range_comparison": { 
+          "formula": "(high - low) > avg_total_range_last_N_bars",
+          "operator": ">",
+          "lookback_period": 20
+        }
+      }
+    }
+  }
+  
