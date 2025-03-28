@@ -1,5 +1,5 @@
-from IBKR_Connection import connect_ibkr, disconnect_ibkr
-from IBKR_Data import fetch_historical_data
+# from IBKR_Connection import connect_ibkr, disconnect_ibkr
+from IBKR_Data import fetch_stock_data #fetch_historical_data
 from bear_trend_bar_static import  apply_bear_trend_bar
 from bull_trend_bar_static import apply_bull_trend_bar
 
@@ -37,16 +37,16 @@ DATA_PERIOD = "180 D"
 BAR_SIZE = "1 day"  # Change to "1 week" for weekly, "5 mins" for intraday
 
 # ✅ STEP 1: Define Contract (SPY Stock)
-from ibapi.contract import Contract
+# from ibapi.contract import Contract
 
-contract = Contract()
-contract.symbol = "SPY"
-contract.secType = "STK"
-contract.exchange = "SMART"
-contract.currency = "USD"
+# contract = Contract()
+# contract.symbol = "SPY"
+# contract.secType = "STK"
+# contract.exchange = "SMART"
+# contract.currency = "USD"
 
 # ✅ STEP 2: Fetch Historical Data (Daily, Weekly, or Intraday)
-df = fetch_historical_data(contract, bar_size=BAR_SIZE, duration=DATA_PERIOD)
+df = fetch_stock_data("SPY", bar_size=BAR_SIZE, duration=DATA_PERIOD)
 
 # ✅ STEP 3: Apply Trend Bar Detection
 if df.empty:

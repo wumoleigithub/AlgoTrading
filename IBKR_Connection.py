@@ -1,8 +1,10 @@
-# IBKR_Connection.py
-import json, threading
+
+import json, threading, time
 from pathlib import Path
 from ibapi.client import EClient
 from ibapi.wrapper import EWrapper
+from ibapi.contract import Contract
+import pandas as pd
 
 CONFIG_FILE = Path(__file__).parent / "config/config.json"
 _ib_connection = None
@@ -11,7 +13,8 @@ class IBApi(EWrapper, EClient):
     def __init__(self):
         EClient.__init__(self, self)
         self.connected_event = threading.Event()
-        self.data = []  # 新增数据容器
+        self.data = []
+        self.data_event = threading.Event()
 
     def nextValidId(self, orderId):
         print(f"✅ IBKR连接成功 (Order ID: {orderId})")
@@ -30,12 +33,14 @@ class IBApi(EWrapper, EClient):
 
     def historicalDataEnd(self, reqId, start, end):
         print("✅ 数据接收完毕")
-        self.connected_event.set()
+        self.data_event.set()
+
 
 def load_ibkr_config():
     with open(CONFIG_FILE, "r") as f:
         cfg = json.load(f)["IBKR_CONNECTION"]
     return cfg["TWS_HOST"], cfg["TWS_PORT"], cfg["CLIENT_ID"]
+
 
 def connect_ibkr(timeout=10):
     global _ib_connection
@@ -55,9 +60,49 @@ def connect_ibkr(timeout=10):
             _ib_connection = None
     return _ib_connection
 
+
 def disconnect_ibkr():
     global _ib_connection
     if _ib_connection and _ib_connection.isConnected():
         _ib_connection.disconnect()
         _ib_connection = None
         print("🔌 IBKR连接已断开")
+
+
+def fetch_historical_data(contract: Contract, end_datetime: str, duration: str, bar_size: str, what_to_show="TRADES"):
+    """
+    获取指定合约的历史数据，返回 pandas DataFrame。
+    """
+    ib = connect_ibkr()
+    if ib is None:
+        return pd.DataFrame()
+
+    ib.data.clear()
+    ib.data_event.clear()
+
+    ib.reqHistoricalData(
+        reqId=1,
+        contract=contract,
+        endDateTime=end_datetime,
+        durationStr=duration,
+        barSizeSetting=bar_size,
+        whatToShow=what_to_show,
+        useRTH=1,
+        formatDate=1,
+        keepUpToDate=False,
+        chartOptions=[]
+    )
+
+    waited = 0
+    while not ib.data_event.is_set() and waited < 15:
+        time.sleep(1)
+        waited += 1
+
+    if not ib.data:
+        print("❌ 没有接收到历史数据")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(ib.data)
+    df["date"] = pd.to_datetime(df["date"])
+    df.set_index("date", inplace=True)
+    return df
