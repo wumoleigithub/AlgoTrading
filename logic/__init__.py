@@ -1,0 +1,2 @@
+from .bear_trend_bar_static import apply_bear_trend_bar
+from .bull_trend_bar_static import apply_bull_trend_bar

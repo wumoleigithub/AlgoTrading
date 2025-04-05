@@ -1,6 +1,4 @@
-# option_data_fetcher.py
-
-from IBKR_Connection import fetch_historical_data
+from IBKR_Connection import fetch_historical_data, connect_ibkr, fetch_contract_details
 from utils.contracts import create_option_contract, get_atm_strike, verify_contract
 import pandas as pd
 
@@ -65,3 +63,38 @@ def fetch_option_data(
                 })
 
     return pd.DataFrame(all_data)
+
+def get_available_option_strikes(symbol: str, expiry: str) -> pd.DataFrame:
+    """
+    使用 reqContractDetails 获取指定标的和到期日下所有可用的期权合约信息。
+    返回一个包含 strike、right 的 DataFrame。
+    """
+    ib = connect_ibkr()
+
+    from ibapi.contract import Contract
+    
+    contract = Contract()
+    contract.symbol = symbol
+    contract.secType = "OPT"
+    contract.exchange = "SMART"
+    contract.currency = "USD"
+    contract.lastTradeDateOrContractMonth = expiry.replace("-", "")
+    #contract.includeExpired = True
+    # contract.multiplier = "100"
+
+    details = fetch_contract_details(contract)
+    data = []
+    for d in details:
+        c = d.contract
+        data.append({
+            "strike": c.strike,
+            "right": c.right,
+            "expiry": c.lastTradeDateOrContractMonth
+        })
+
+    if not data:
+        print(f"⚠️ 无可用合约返回: {symbol} {expiry}")
+        return pd.DataFrame()
+    
+    df = pd.DataFrame(data).drop_duplicates().sort_values("strike")
+    return df.reset_index(drop=True)

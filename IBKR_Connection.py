@@ -15,6 +15,8 @@ class IBApi(EWrapper, EClient):
         self.connected_event = threading.Event()
         self.data = []
         self.data_event = threading.Event()
+        self.contract_details = []
+        self.contract_event = threading.Event()
 
     def nextValidId(self, orderId):
         print(f"✅ IBKR连接成功 (Order ID: {orderId})")
@@ -34,6 +36,12 @@ class IBApi(EWrapper, EClient):
     def historicalDataEnd(self, reqId, start, end):
         print("✅ 数据接收完毕")
         self.data_event.set()
+
+    def contractDetails(self, reqId, contractDetails):
+        self.contract_details.append(contractDetails)
+
+    def contractDetailsEnd(self, reqId, *_):
+        self.contract_event.set()
 
 
 def load_ibkr_config():
@@ -106,3 +114,20 @@ def fetch_historical_data(contract: Contract, end_datetime: str, duration: str, 
     df["date"] = pd.to_datetime(df["date"])
     df.set_index("date", inplace=True)
     return df
+
+def fetch_contract_details(contract: Contract, timeout=5):
+    """
+    使用 reqContractDetails 异步获取合约详情列表。
+    """
+    ib = connect_ibkr()
+    ib.contract_details.clear()
+    ib.contract_event.clear()
+
+    ib.reqContractDetails(999, contract)
+
+    waited = 0
+    while not ib.contract_event.is_set() and waited < timeout:
+        time.sleep(1)
+        waited += 1
+
+    return ib.contract_details

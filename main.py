@@ -1,7 +1,6 @@
-# from IBKR_Connection import connect_ibkr, disconnect_ibkr
+
 from IBKR_Data import fetch_stock_data #fetch_historical_data
-from bear_trend_bar_static import  apply_bear_trend_bar
-from bull_trend_bar_static import apply_bull_trend_bar
+from logic import apply_bull_trend_bar, apply_bear_trend_bar
 
 
 

@@ -1,6 +1,6 @@
 from IBKR_Connection import connect_ibkr, disconnect_ibkr
-from bear_trend_bar_static import fetch_historical_data, apply_bear_trend_bar
-from bull_trend_bar_static import fetch_historical_data, apply_bull_trend_bar
+from logic.bear_trend_bar_static import fetch_historical_data, apply_bear_trend_bar
+from logic.bull_trend_bar_static import fetch_historical_data, apply_bull_trend_bar
 from ib_insync import *
 import pandas as pd
 import numpy as np
