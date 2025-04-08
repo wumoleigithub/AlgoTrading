@@ -1,36 +1,24 @@
 # Entry point for historical backtesting
-from options.option_data_fetcher import fetch_option_data,get_available_option_strikes
+from options.option_data_fetcher import fetch_option_data, get_available_option_strikes, get_single_option_data
 
-# ✅ 设置参数
-symbol = "SPY"                    # 标的
-trade_date = "2025-03-26"         # 查询交易日（格式 YYYY-MM-DD）
-expiry = "2025-04-01"             # 到期日（格式 YYYY-MM-DD）
-right = "both"                    # 可选："call"、"put"、"both"
-strike = None                     # 若为 None，则自动查找 ATM 附近期权
-strike_count = 10                 # ATM 上下各取几个 strike，总共 20 个
+# ✅ 获取可用的期权执行价,只能获得未来数据
+# df_strikes = get_available_option_strikes("SPY", "2025-04-14")
+# print(df_strikes.head(20))
 
-# ✅ 调用函数获取期权价格数据
-# df = fetch_option_data(
-#     symbol=symbol,
-#     trade_date=trade_date,
-#     expiry=expiry,
-#     right=right,
-#     strike=strike,
-#     strike_count=strike_count,
-#     bar_size="5 mins"
-# )
+################################################################
+#获取单一期权的历史数据
+df = get_single_option_data(
+    symbol="SPY",
+    expiry="2024-03-15",
+    strike=560,
+    right="C",
+    duration="60 D",
+    bar_size="1 day",
+    end_datetime=""  # 默认当前时间
+)
 
-# # ✅ 显示结果
-# if df.empty:
-#     print("⚠️ 无期权数据返回，请检查连接或参数。")
-# else:
-#     print(df)
+print(df.tail())
 
 
-# from IBKR_Connection import IBApi
-
-# print("正在使用的 IBApi.contractDetailsEnd 签名为:",
-#       IBApi.contractDetailsEnd.__code__.co_varnames)
-
-df_strikes = get_available_option_strikes("SPY", "2025-04-14")
-print(df_strikes.head(20))
+#next: 根据 strike 和 trade date 获取期权在某日的日内数据数据
+# learn copilot

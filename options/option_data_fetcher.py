@@ -1,7 +1,7 @@
 from IBKR_Connection import fetch_historical_data, connect_ibkr, fetch_contract_details
 from utils.contracts import create_option_contract, get_atm_strike, verify_contract
 import pandas as pd
-
+from ibapi.contract import Contract
 
 def fetch_option_data(
     symbol: str,
@@ -98,3 +98,35 @@ def get_available_option_strikes(symbol: str, expiry: str) -> pd.DataFrame:
     
     df = pd.DataFrame(data).drop_duplicates().sort_values("strike")
     return df.reset_index(drop=True)
+
+def get_single_option_data(
+    symbol: str,
+    expiry: str,
+    strike: float,
+    right: str,
+    duration: str = "30 D",
+    bar_size: str = "1 day",
+    end_datetime: str = ""
+) -> pd.DataFrame:
+    """
+    构建单个期权合约，并返回其历史数据。
+    """
+    contract = Contract()
+    contract.symbol = symbol
+    contract.secType = "OPT"
+    contract.exchange = "SMART"
+    contract.currency = "USD"
+    contract.lastTradeDateOrContractMonth = expiry.replace("-", "")
+    contract.strike = float(strike)
+    contract.right = right.upper()
+    contract.multiplier = "100"
+    contract.includeExpired = True
+
+    df = fetch_historical_data(
+        contract=contract,
+        end_datetime=end_datetime,
+        duration=duration,
+        bar_size=bar_size,
+        what_to_show="TRADES"
+    )
+    return df

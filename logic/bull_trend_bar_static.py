@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from definitions import load_definitions
+from utils.definitions import load_definitions
 
 # ✅ Load Configuration
 config = load_definitions()

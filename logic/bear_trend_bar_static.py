@@ -1,5 +1,5 @@
 from IBKR_Connection import connect_ibkr
-from definitions import load_definitions
+from utils.definitions import load_definitions
 import pandas as pd
 import numpy as np
 
