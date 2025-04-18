@@ -1,85 +1,39 @@
-# utils/volatility_data.py
-
-from IBKR_Connection import connect_ibkr
-from ibapi.contract import Contract
 import time
-import datetime
+from datetime import datetime
+from IBKR_Connection import get_ibkr_price, fetch_contract_details
+from utils.contracts import get_vix_contract, create_vx_contract
 
-def get_ibkr_price(contract: Contract, timeout: int = 5) -> float:
+def get_realtime_vix():
     """
-    请求 IBKR 实时市场价格（中间价），用于指数或期货。
+    获取 VIX 指数的快照价格。
     """
-    ib = connect_ibkr()
-    if ib is None:
-        return -1
+    return get_ibkr_price(get_vix_contract())
 
-    #to be changed
-    ib.reqMktData(1, contract, "", False, False, [])
+# def get_realtime_vx(front_month: str = None):
+#     """
+#     获取 VX（VIX 期货）的快照价格。
+#     若未指定 front_month，将自动获取下一个月份。
+#     格式如 "2024-05"
+#     """
+#     return get_ibkr_price(get_vx_contract(front_month))
 
-    price = None
-    waited = 0
-    while waited < timeout:
-        tickers = ib.tickerSnapshot(1, contract, snapshot=True)
-        if tickers:
-            ticker = tickers[0]
-            price = ticker.marketPrice()
-            if price > 0:
-                break
-        time.sleep(1)
-        waited += 1
-
-    ib.cancelMktData(1)
-    return price
-
-def get_realtime_vix() -> float:
-    """获取 VIX 指数的实时价格。"""
-    vix = Contract()
-    vix.symbol = "VIX"
-    vix.secType = "IND"
-    vix.exchange = "CBOE"
-    vix.currency = "USD"
-    return get_ibkr_price(vix)
-
-def get_realtime_vx(month_code: str) -> float:
+def get_realtime_vx(expiry: str = None) -> float:
     """
-    获取指定月份 VX 期货的实时价格。
-    参数 month_code 示例："202404" 表示 2024 年 4 月合约。
+    获取某个月份的 VIX 期货（VX）价格
     """
-    vx = Contract()
-    vx.symbol = "VX"
-    vx.secType = "FUT"
-    vx.exchange = "CFE"
-    vx.currency = "USD"
-    vx.lastTradeDateOrContractMonth = month_code
-    return get_ibkr_price(vx)
+    contract = create_vx_contract(expiry)
+    # if not fetch_contract_details(contract):
+    #     print(f"❌ 无效的 VX 合约：{expiry}")
+    #     print(contract)
+    #     return -1
 
-def get_front_month_code() -> str:
-    """
-    自动生成最近月 VX 合约代码（格式如 "202404"）。
-    若今日在月初（如1~3号），则可能使用当月，否则默认下月。
-    """
-    today = datetime.date.today()
-    year = today.year
-    month = today.month
-    if today.day >= 25:
-        month += 1
-        if month > 12:
-            month = 1
-            year += 1
-    return f"{year}{month:02d}"
+    return get_ibkr_price(contract)
 
-def get_realtime_vix_and_vx(month_code: str = None):
+def get_realtime_vix_and_vx(front_month: str = None):
     """
-    获取 VIX 指数和指定月份（默认最近月）VX 期货的实时价格。
+    同时获取 VIX 与 VX 当前快照价格。
     """
-    if month_code is None:
-        month_code = get_front_month_code()
-
     vix_price = get_realtime_vix()
-    vx_price = get_realtime_vx(month_code)
+    vx_price = get_realtime_vx(front_month)
+    #vx_price = get_realtime_vx("2025-05-21")  # 使用指定的月份获取 VX 价格")
     return vix_price, vx_price
-
-# 示例调用
-# if __name__ == "__main__":
-#     vix, vx = get_realtime_vix_and_vx()
-#     print(f"✅ VIX Index: {vix:.2f}, VX Front Month: {vx:.2f}")
