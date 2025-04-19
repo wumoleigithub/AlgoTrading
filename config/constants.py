@@ -1,0 +1,1 @@
+TRADING_DAYS_PER_YEAR = 252  # ✅ 若美股全天交易，可改为 365
