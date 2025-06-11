@@ -151,3 +151,9 @@ def get_third_wednesday(year, month):
     days_to_wednesday = (2 - weekday + 7) % 7
     first_wednesday = first_day + timedelta(days=days_to_wednesday)
     return first_wednesday + timedelta(weeks=2)
+
+from IBKR_Connection import fetch_contract_details
+from ibapi.contract import Contract
+import pandas as pd
+
+

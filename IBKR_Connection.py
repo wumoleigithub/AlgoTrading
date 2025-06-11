@@ -7,6 +7,7 @@ from ibapi.wrapper import EWrapper
 from ibapi.contract import Contract
 import pandas as pd
 from core.ibkr_dispatcher import IBKRDispatcher
+from typing import Set, List
 
 # ✅ 全局配置文件路径
 CONFIG_FILE = Path(__file__).parent / "config/config.json"
@@ -41,17 +42,6 @@ class IBApi(EWrapper, EClient):
             "volume": bar.volume
         })
 
-
-    # def historicalDataEnd(self, reqId, start, end):
-    #     print("✅ 数据接收完毕")
-    #     self.data_event.set()
-
-    # def contractDetails(self, reqId, contractDetails):
-    #     self.contract_details.append(contractDetails)
-
-    # def contractDetailsEnd(self, reqId, *_):
-    #     self.contract_event.set()
-
     def historicalDataEnd(self, reqId, *_):
         self.dispatcher.signal_done(reqId)
 
@@ -61,17 +51,49 @@ class IBApi(EWrapper, EClient):
     def contractDetailsEnd(self, reqId, *_):
         self.dispatcher.signal_done(reqId)
 
+    def securityDefinitionOptionalParameter(
+        self,
+        reqId: int,
+        exchange: str,
+        underlyingConId: int,
+        tradingClass: str,
+        multiplier: str,
+        expirations: Set[str],
+        # strikes: Set[float]
+        strikes: List[float]
+    ):
+        self.dispatcher.set_result(reqId, {
+            "exchange": exchange,
+            "underlyingConId": underlyingConId,
+            "tradingClass": tradingClass,
+            "multiplier": multiplier,
+            "expirations": list(expirations),
+            "strikes": list(strikes)
+        })
+
+    def securityDefinitionOptionalParameterEnd(self, reqId):
+        print(f"[Callback Fired] SecDefParams: ")
+        self.dispatcher.signal_done(reqId)
+
 # ✅ 外部配置文件加载
-def load_ibkr_config():
+def load_ibkr_config(mode="paper"):
     with open(CONFIG_FILE, "r") as f:
         cfg = json.load(f)["IBKR_CONNECTION"]
-    return cfg["TWS_HOST"], cfg["TWS_PORT"], cfg["CLIENT_ID"]
+    host = cfg["TWS_HOST"]
+    client_id = cfg["CLIENT_ID"]
+
+    if mode == "live":
+        port = cfg["TWS_PORT_LIVE"]
+    else:
+        port = cfg["TWS_PORT_PAPER"]
+
+    return host, port, client_id
 
 # ✅ 连接 IBKR（全局连接单例）
-def connect_ibkr(timeout=10) -> IBApi | None:
+def connect_ibkr(timeout=10, mode="paper"):
     global _ib_connection
     if _ib_connection is None or not _ib_connection.isConnected():
-        host, port, client_id = load_ibkr_config()
+        host, port, client_id = load_ibkr_config(mode=mode)
         _ib_connection = IBApi()
         try:
             _ib_connection.connect(host, port, client_id)
@@ -218,3 +240,9 @@ def verify_contract_internal(contract: Contract, timeout: int = 5) -> bool:
     ib.dispatcher.clear(req_id)
 
     return bool(result)
+
+def tickOptionComputation(self, reqId, tickType, impliedVol, delta, optPrice,
+                           pvDividend, gamma, vega, theta, undPrice):
+    if tickType == 10:  # MODEL_OPTION
+        self.dispatcher.set_result(reqId, [impliedVol, delta, gamma, vega, theta])
+        self.dispatcher.signal_done(reqId)
